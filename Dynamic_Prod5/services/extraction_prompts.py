@@ -326,41 +326,41 @@ def get_generic_extraction_prompt():
     """
 
 
-def get_consent_letter_extraction_prompt():
-    """
-    Generate consent letter extraction prompt
-    """
-    return """
-    Extract the following information from this consent letter:
+# def get_consent_letter_extraction_prompt():
+#     """
+#     Generate consent letter extraction prompt
+#     """
+#     return """
+#     Extract the following information from this consent letter:
     
-    - Landlord's name
-    - Landlord's address
-    - Applicant's name
-    - Firm name
-    - Relation between landlord and applicant
-    - Date of consent letter
+#     - Landlord's name
+#     - Landlord's address
+#     - Applicant's name
+#     - Firm name
+#     - Relation between landlord and applicant
+#     - Date of consent letter
     
-    Also assess the following:
-    - Is the document executed on stamp paper? (yes/no)
-    - Is the document notarized on all pages? (yes/no)
-    - Is the relation between landlord and applicant clearly mentioned? (yes/no)
+#     Also assess the following:
+#     - Is the document executed on stamp paper? (yes/no)
+#     - Is the document notarized on all pages? (yes/no)
+#     - Is the relation between landlord and applicant clearly mentioned? (yes/no)
     
-    Return a JSON with these exact keys:
-    {
-        "landlord_name": "Name of landlord",
-        "landlord_address": "Complete address",
-        "applicant_name": "Name of applicant",
-        "firm_name": "Name of firm",
-        "relation": "Relationship description",
-        "date": "DD/MM/YYYY",
-        "on_stamp_paper": true/false,
-        "is_notarized": true/false,
-        "relation_mentioned": true/false,
-        "clarity_score": 0.95
-    }
+#     Return a JSON with these exact keys:
+#     {
+#         "landlord_name": "Name of landlord",
+#         "landlord_address": "Complete address",
+#         "applicant_name": "Name of applicant",
+#         "firm_name": "Name of firm",
+#         "relation": "Relationship description",
+#         "date": "DD/MM/YYYY",
+#         "on_stamp_paper": true/false,
+#         "is_notarized": true/false,
+#         "relation_mentioned": true/false,
+#         "clarity_score": 0.95
+#     }
     
-    If a field is not found, use null.
-    """
+#     If a field is not found, use null.
+#     """
 
 def get_board_resolution_extraction_prompt():
     """
@@ -519,6 +519,36 @@ def get_elec_bill_extraction_prompt():
         "is_notarized": true/false,
         "clarity_score": 0.95,
         "complete_address_visible": true/false
+    }
+
+    If a field is not found, use null.
+    """
+
+def get_consent_letter_extraction_prompt():
+    """
+    Generate Consent Letter extraction prompt for GST Family Owned Property
+    """
+    return """
+    Extract the following information from the Consent Letter:
+    - Is there a notary seal on every page? (yes/no)
+    - Is the document executed on stamp paper? (yes/no)
+    - Firm name mentioned (string)
+    - Does the letter state rent-free provision? (yes/no)
+    - Landlord's signature with date and place is present? (yes/no)
+    - Landlord's name (string)
+    - Landlord's address (string)
+    - Clarity score (0 to 1)
+
+    Return a JSON with these exact keys:
+    {
+        "notary_seal_all_pages": true/false,
+        "on_stamp_paper": true/false,
+        "firm_name": "Firm Name",
+        "rent_free_statement": true/false,
+        "landlord_signature_with_date_place": true/false,
+        "landlord_name": "Landlord Name",
+        "landlord_address": "Landlord Address",
+        "clarity_score": 0.95
     }
 
     If a field is not found, use null.
