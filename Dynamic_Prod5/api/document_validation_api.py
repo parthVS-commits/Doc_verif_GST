@@ -52,13 +52,22 @@ class DocumentValidationAPI:
         """
         try:
             # Validate input structure
-            self._validate_input_structure(input_data)
+            
             
             # Extract parameters
             service_id = input_data.get('service_id', '1')
             request_id = input_data.get('request_id', '')
-            
+            if service_id == "4":
+                #self._validate_gst_input_structure(input_data)
+                nationality = input_data.get('nationality', 'indian')
+                gst_documents = input_data.get('gst_documents', {})
+                result, detailed_result = self.validation_service.validate_gst_own_documents(
+                    service_id, request_id, nationality, gst_documents
+                )
+                formatted_result = self._format_gst_api_response(result, detailed_result)
+                return formatted_result, detailed_result
             # Perform validation
+            self._validate_input_structure(input_data)
             result, detailed_result = self.validation_service.validate_documents(
                 service_id, 
                 request_id, 
@@ -108,7 +117,22 @@ class DocumentValidationAPI:
             }
             
             return error_response, detailed_error
-    
+    def _validate_gst_input_structure(self, input_data: Dict[str, Any]):
+        required_keys = ['service_id', 'request_id', 'nationality', 'gst_documents']
+        for key in required_keys:
+            if key not in input_data:
+                raise DocumentValidationError(f"Missing required key: {key}")
+        gst_documents = input_data['gstDocuments']
+        if not isinstance(gst_documents, dict):
+            raise DocumentValidationError("gstDocuments must be a dictionary")
+    # Optionally, check for required document keys inside gstDocuments
+
+    def _format_gst_api_response(self, result: Dict[str, Any], detailed_result: Dict[str, Any]) -> Dict[str, Any]:
+        api_response = {
+            "validation_rules": result.get('validation_rules', {}),
+            "document_validation": result.get('document_validation', {})
+        }
+        return api_response
     def _validate_input_structure(self, input_data: Dict[str, Any]):
         """
         Validate the structure of input data
