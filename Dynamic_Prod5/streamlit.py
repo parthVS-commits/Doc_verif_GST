@@ -161,9 +161,41 @@ def display_results(response_data, _):
 # --- UI Input Section ---
 service_id = st.text_input("Service ID", value="1")
 request_id = st.text_input("Request ID", value="req-12345")
+# GST Own Property Service UI
+if service_id == "4":
+    st.header("GST Own Property Service Input")
+    nationality = st.selectbox("Nationality", options=["Indian", "Foreign"])
+    gst_docs = {}
 
+    st.subheader("GST Documents Upload")
+    if nationality == "Indian":
+        gst_docs["aadhar_front"] = encode_file(st.file_uploader("Aadhar Front"))
+        gst_docs["aadhar_back"] = encode_file(st.file_uploader("Aadhar Back"))
+        gst_docs["pan"] = encode_file(st.file_uploader("PAN Card"))
+    gst_docs["passport_photo"] = encode_file(st.file_uploader("Passport Photo"))
+    gst_docs["signature"] = encode_file(st.file_uploader("Signature"))
+    # gst_docs["address_proof"] = encode_file(st.file_uploader("Address Proof"))
+    gst_docs["noc"] = encode_file(st.file_uploader("NOC Document"))
+    gst_docs["electricity_bill"] = encode_file(st.file_uploader("Electricity Bill / Property Tax "))
+    # gst_docs["property_tax"] = encode_file(st.file_uploader("Property Tax Receipt"))
+
+    if st.button("Validate GST Own Property Documents"):
+        payload = {
+            "service_id": service_id,
+            "request_id": request_id,
+            "nationality": nationality,
+            "gst_documents": gst_docs
+        }
+        try:
+            api_response, _ = validation_api.validate_document(payload)
+            st.success("✅ GST Own Property Validation Completed Successfully!")
+            display_results(api_response, _)
+            with st.expander("Show Raw Validation Response"):
+                st.json(api_response)
+        except Exception as e:
+            st.error(f"🚨 Validation Error: {str(e)}")
 # TM Service UI
-if service_id == "8":
+elif service_id == "8":
     st.header("Trademark (TM) Service Input")
     request_id = st.text_input("TM Request ID", value="tm-req-001")
     applicant_type = st.selectbox("Applicant Type", options=["Individual", "Company"])

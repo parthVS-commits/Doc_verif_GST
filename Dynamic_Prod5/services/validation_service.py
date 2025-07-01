@@ -278,141 +278,38 @@ class DocumentValidationService:
                     "conditions": {
                         "linkage_api_check_required": True
                     }
+                },
+                {
+                    "rule_id": "AADHAR_PAN_NAME_DOB_MATCH",
+                    "rule_name": "Aadhar PAN Name and DOB Match Validation",
+                    "description": "Aadhar name and DOB must match with PAN name and DOB",
+                    "severity": "high",
+                    "is_active": True,
+                    "conditions": {
+                        "name_match_required": True,
+                        "dob_match_required": True,
+                        "exact_match_tolerance": 0.95
+                    }
+                },
+                {
+                    "rule_id": "EB_PROPERTY_TAX_VALIDATION",
+                    "rule_name": "Electricity Bill and Property Tax Receipt Validation",
+                    "description": "EB bill and property tax receipt with complete address and landlord name, EB bill within 40 days, property tax for current FY",
+                    "severity": "high",
+                    "is_active": True,
+                    "conditions": {
+                        "eb_bill_max_age_days": 40,
+                        "complete_address_required": True,
+                        "landlord_name_required": True,
+                        "eb_bill_mandatory_states": ["Madhya Pradesh", "Maharashtra"]
+                    }
                 }
             ]
         }
         
         self.logger.info(f"Using default compliance rules: {json.dumps(default_rules, indent=2)}")
         return default_rules
-    
-    # def validate_documents(
-    #     self, 
-    #     service_id: str, 
-    #     request_id: str, 
-    #     input_data: Dict[str, Any]
-    # ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
-    #     """
-    #     Main document validation method
-    #     """
-    #     start_time = time.time()
-        
-    #     try:
-    #         # Retrieve compliance rules
-    #         compliance_rules = self._get_compliance_rules(service_id)
-            
-    #         # Validate directors
-    #         directors_validation = self._validate_directors(
-    #             input_data.get('directors', {}), 
-    #             compliance_rules
-    #         )
-            
-    #         # Validate company documents
-    #         company_docs_validation = self._validate_company_documents(
-    #             input_data.get('companyDocuments', {}),
-    #             input_data.get('directors', {}),
-    #             compliance_rules
-    #         )
-            
-    #         # Calculate processing time
-    #         processing_time = time.time() - start_time
-            
-    #         # Ensure directors_validation is a dictionary
-    #         if isinstance(directors_validation, list):
-    #             directors_validation = {str(idx): info for idx, info in enumerate(directors_validation)}
-            
-    #         # Determine overall compliance
-    #         is_compliant = all(
-    #             director.get('is_valid', False) 
-    #             for director in directors_validation.values() 
-    #             if isinstance(director, dict)
-    #         )
-            
-    #         # Prepare standard result with type checking
-    #         standard_result = {
-    #             "validation_rules": self._prepare_validation_rules(directors_validation, company_docs_validation),
-    #             "document_validation": {
-    #                 "directors": {
-    #                     director_key: {
-    #                         "nationality": director_info.get('nationality', 'Unknown'),
-    #                         "authorized": director_info.get('is_authorised', False),
-    #                         "documents": {
-    #                             doc_key: {
-    #                                 "status": self._get_document_status(doc_info),
-    #                                 "reason": self._get_document_reason(doc_info)
-    #                             } for doc_key, doc_info in director_info.get('documents', {}).items()
-    #                         }
-    #                     } for director_key, director_info in directors_validation.items() 
-    #                     if isinstance(director_info, dict)
-    #                 },
-    #                 "companyDocuments": {
-    #                     "addressProof": {
-    #                         "status": "Valid" if company_docs_validation.get('is_valid', False) else "Not Valid",
-    #                         "reason": company_docs_validation.get('validation_errors', [None])[0]
-    #                     },
-    #                     "noc": {
-    #                         "status": "Valid" if company_docs_validation.get('noc', {}).get('is_valid', False) else "Not Valid",
-    #                         "reason": None
-    #                     }
-    #                 }
-    #             }
-    #         }
-            
-    #         # Prepare detailed result
-    #         detailed_result = {
-    #             "validation_rules": self._prepare_detailed_validation_rules(directors_validation, company_docs_validation),
-    #             "document_validation": {
-    #                 "directors": directors_validation,
-    #                 "companyDocuments": company_docs_validation
-    #             },
-    #             "metadata": {
-    #                 "service_id": service_id,
-    #                 "request_id": request_id,
-    #                 "timestamp": datetime.now().isoformat(),
-    #                 "processing_time": processing_time,
-    #                 "is_compliant": is_compliant
-    #             }
-    #         }
-            
-    #         return standard_result, detailed_result
-            
-    #     except Exception as e:
-    #         self.logger.error(f"Comprehensive validation error: {str(e)}", exc_info=True)
-            
-    #         # Prepare error results
-    #         error_result = {
-    #             "validation_rules": {
-    #                 "global_error": {
-    #                     "status": "failed",
-    #                     "error_message": str(e)
-    #                 }
-    #             },
-    #             "document_validation": {
-    #                 "directors": {},
-    #                 "companyDocuments": {}
-    #             }
-    #         }
-            
-    #         error_detailed_result = {
-    #             "validation_rules": {
-    #                 "global_error": {
-    #                     "status": "failed",
-    #                     "error_message": str(e),
-    #                     "stacktrace": traceback.format_exc()
-    #                 }
-    #             },
-    #             "document_validation": {
-    #                 "directors": {},
-    #                 "companyDocuments": {}
-    #             },
-    #             "metadata": {
-    #                 "service_id": service_id,
-    #                 "request_id": request_id,
-    #                 "timestamp": datetime.now().isoformat(),
-    #                 "error": str(e)
-    #             }
-    #         }
-            
-    #         return error_result, error_detailed_result
+
     def _get_expected_documents_for_service(self, service_id: str, compliance_rules: Dict) -> Dict[str, List[str]]:
         """
         Determine which documents are expected based on service ID and rules
@@ -568,6 +465,10 @@ class DocumentValidationService:
             self.logger.info(f"FORCED Rule Selection for Service ID {service_id}: {json.dumps(compliance_rules, indent=2)}")
             if service_id == "8":  # TM Service
                 return self._validate_tm_documents(service_id, request_id, input_data, compliance_rules, start_time)
+            elif service_id == "4":  # GST Own Property
+                nationality = input_data.get("nationality", "Indian")
+                gst_documents = input_data.get("gst_documents", {})
+                return self.validate_gst_own_documents(service_id, request_id, nationality, gst_documents)
             else:
                 # Extract preconditions if available
                 preconditions = input_data.get('preconditions', {})
@@ -585,22 +486,6 @@ class DocumentValidationService:
                     compliance_rules,
                     preconditions
                 )
-                # company_docs_validation = self._process_company_documents(
-                #     input_data.get('companyDocuments', {})#,
-                #     #input_data.get('directors', {}),
-                #     #compliance_rules,
-                #     #preconditions
-                # )
-                # company_docs_extracted = self._process_company_documents(
-                #     input_data.get('companyDocuments', {})
-                # )
-
-                # company_docs_validation = self._apply_company_rules(
-                #     company_docs_extracted,
-                #     compliance_rules,
-                #     preconditions
-                # )
-
                 
                 # Calculate processing time
                 processing_time = time.time() - start_time
@@ -852,10 +737,7 @@ class DocumentValidationService:
                     rule_validations = director_info.get('rule_validations', {})
                     for rule_id, rule_result in rule_validations.items():
                         api_rule_id = rule_id_mapping.get(rule_id.lower(), rule_id.lower())
-                        # validation_defaults[api_rule_id] = {
-                        #     "status": rule_result.get('status', 'failed').lower(),
-                        #     "error_message": rule_result.get('error_message')
-                        # }
+        
                         if isinstance(rule_result, list):
                             failed = [r for r in rule_result if r.get("status") != "passed"]
                             if failed:
@@ -880,27 +762,6 @@ class DocumentValidationService:
         if isinstance(company_docs_validation, dict):
             # Check for validation errors in company documents
             validation_errors = company_docs_validation.get('validation_errors', [])
-            
-            # # Company address proof validation
-            # if 'company_address_proof' in validation_defaults and validation_errors:
-            #     validation_defaults['company_address_proof'] = {
-            #         "status": "failed",
-            #         "error_message": validation_errors[0] if validation_errors else None
-            #     }
-            
-            # # NOC validation
-            # if 'noc_validation' in validation_defaults:
-            #     noc_validation = company_docs_validation.get('noc_validation', {})
-            #     if noc_validation:
-            #         validation_defaults['noc_validation'] = {
-            #             "status": noc_validation.get('status', 'failed').lower(),
-            #             "error_message": noc_validation.get('error_message')
-            #         }
-            #     elif validation_errors:
-            #         validation_defaults['noc_validation'] = {
-            #             "status": "failed",
-            #             "error_message": validation_errors[0] if validation_errors else None
-            #         }
             
             if 'noc_validation' in validation_defaults:
                 noc_data = company_docs_validation.get('noc', {})
@@ -1302,9 +1163,9 @@ class DocumentValidationService:
             validation_results['global_errors'] = global_errors
         if rule_validations:
             validation_results['rule_validations'] = rule_validations
-        print("----------------------------------------------")
-        print(f"Validation results: {validation_results}")
-        print("----------------------------------------------")
+        # print("----------------------------------------------")
+        # print(f"Validation results: {validation_results}")
+        # print("----------------------------------------------")
         return validation_results
 
 
@@ -1870,45 +1731,6 @@ class DocumentValidationService:
                         self.logger.error(f"Failed to process addressProof input: {e}")
                         addprf_error.append(f"Failed to process address proof: {str(e)}")
 
-                # if 'addressProof' in company_docs:
-                #     address_proof_input = company_docs.get('addressProof')
-                #     if address_proof_input:
-                #         try:
-                #             if address_proof_input.startswith("http://") or address_proof_input.startswith("https://"):
-                #                 source = address_proof_input
-                #             else:
-                #                 source = self._save_base64_to_tempfile(address_proof_input, "pdf")
-                            
-                #             address_proof_future = executor.submit(
-                #                 self.extraction_service.extract_document_data,
-                #                 source,
-                #                 'address_proof'
-                #             )
-                #         except Exception as e:
-                #             self.logger.error(f"Failed to process addressProof input: {e}")
-                #             addprf_error.append(f"Failed to process address proof: {str(e)}")
-
-                # address_proof_future = None
-                # if 'addressProof' in company_docs:
-                #     address_proof_url = company_docs.get('addressProof')
-                #     if address_proof_url:
-                #         address_proof_future = executor.submit(
-                #             self.extraction_service.extract_document_data,
-                #             address_proof_url,
-                #             'address_proof'
-                #         )
-                
-                # Submit NOC task
-                # noc_future = None
-                # if 'noc' in company_docs:
-                #     noc_url = company_docs.get('noc')
-                #     if noc_url:
-                #         noc_future = executor.submit(
-                #             self.extraction_service.extract_document_data,
-                #             noc_url,
-                #             'noc'
-                #         )
-
                 # Submit noc task
                 noc_future = None
                 noc_input = company_docs.get('noc')
@@ -1934,25 +1756,6 @@ class DocumentValidationService:
                     except Exception as e:
                         self.logger.error(f"Failed to process noc input: {e}")
                         noc_error.append(f"Failed to process NOC: {str(e)}")
-
-                # if 'noc' in company_docs:
-                #     noc_input = company_docs.get('noc')
-                #     if noc_input:
-                #         try:
-                #             if noc_input.startswith("http://") or noc_input.startswith("https://"):
-                #                 source = noc_input
-                #             else:
-                #                 source = self._save_base64_to_tempfile(noc_input, "pdf")
-                            
-                #             noc_future = executor.submit(
-                #                 self.extraction_service.extract_document_data,
-                #                 source,
-                #                 'noc'
-                #             )
-                #         except Exception as e:
-                #             self.logger.error(f"Failed to process noc input: {e}")
-                #             noc_error.append(f"Failed to process NOC: {str(e)}")
-
                 
                 # Process address proof result
                 if address_proof_future:
@@ -2097,62 +1900,6 @@ class DocumentValidationService:
                         }
                         noc_error.append(f"NOC error: {str(e)}")
             
-            # Add validation errors
-            # if validation_errors:
-            #     validation_result["validation_errors"] = validation_errors
-            #     validation_result["is_valid"] = False
-            # else:
-            #     validation_result["is_valid"] = True
-            # Convert internal result into display-friendly format
-            # for doc_key in ["addressProof", "noc"]:
-            #     if doc_key in validation_result:
-            #         doc_entry = validation_result[doc_key]
-            #         errors = []
-
-            #         # Append global validation_errors if they relate to this doc
-            #         # if "validation_errors" in validation_result:
-            #         #     for err in validation_result["validation_errors"]:
-            #         #         if doc_key.lower() in err.lower():
-            #         #             errors.append(err)
-            #         for err in validation_result.get("validation_errors", []):
-            #             if doc_key == "addressProof" and err.lower().startswith("address proof"):
-            #                 errors.append(err)
-            #             elif doc_key == "noc" and err.lower().startswith("noc"):
-            #                 errors.append(err)
-
-            #         doc_entry["status"] = "Valid" if doc_entry.get("is_valid") and not errors else "Failed"
-            #         doc_entry["error_messages"] = errors
-            # Format statuses only for keys that exist
-
-            # for doc_key in validation_result.keys():
-            #     if doc_key not in ["addressProof", "noc"]:
-            #         continue  # skip any extra keys like validation_errors, etc.
-                
-            #     doc_entry = validation_result[doc_key]
-            #     errors = []
-
-            #     for err in validation_result.get("validation_errors", []):
-            #         if doc_key == "addressProof" and err.lower().startswith("address proof"):
-            #             errors.append(err)
-            #         elif doc_key == "noc" and err.lower().startswith("noc"):
-            #             errors.append(err)
-
-            #     doc_entry["status"] = "Valid" if doc_entry.get("is_valid") and not errors else "Failed"
-            #     doc_entry["error_messages"] = errors
-            # Assign errors per document
-            # for doc_key in doc_specific_errors:
-            #     if doc_key in validation_result:
-            #         errors = doc_specific_errors.get(doc_key, [])
-            #         validation_result[doc_key]["error_messages"] = errors
-            #         validation_result[doc_key]["status"] = "Valid" if validation_result[doc_key].get("is_valid") and not errors else "Failed"
-
-            # # Combine all document-level errors into one validation_errors array
-            # all_errors = []
-            # for errs in doc_specific_errors.values():
-            #     all_errors.extend(errs)
-
-            # validation_result["validation_errors"] = all_errors
-            # validation_result["is_valid"] = len(all_errors) == 0
             # Attach errors to result
             if "addressProof" in validation_result:
                 validation_result["addressProof"]["error_messages"] = addprf_error
@@ -2554,60 +2301,6 @@ class DocumentValidationService:
             "error_message": None,
             "details": None
         }
-
-    # def _validate_signature_rule(self, directors_validation, conditions):
-    #     """
-    #     Validate signature rule for all directors with more leniency
-        
-    #     Args:
-    #         directors_validation (dict): Directors validation data
-    #         conditions (dict): Rule conditions
-        
-    #     Returns:
-    #         dict: Validation result
-    #     """
-    #     # Safely process directors validation
-    #     safe_directors = self._safe_validate_directors(directors_validation)
-        
-    #     # Get conditions with lower default thresholds for leniency
-    #     min_clarity_score = conditions.get('min_clarity_score', 0.1)  # Lower threshold
-    #     require_handwritten = conditions.get('is_handwritten', False)  # Make optional
-    #     require_complete = conditions.get('is_complete', False)  # Make optional
-        
-    #     # Check each director
-    #     for director_key, director_info in safe_directors.items():
-    #         documents = director_info.get('documents', {})
-    #         signature = documents.get('signature', {})
-            
-    #         # Skip if no signature
-    #         if not signature:
-    #             # Just log a warning but don't fail
-    #             self.logger.warning(f"No signature document found for {director_key}")
-    #             continue
-            
-    #         # If extraction failed, be lenient
-    #         if not signature.get('is_valid', False):
-    #             self.logger.warning(f"Signature extraction issues for {director_key}, but proceeding with validation")
-    #             continue
-                
-    #         # Get extraction data
-    #         extracted_data = signature.get('extracted_data', {})
-            
-    #         # Check clarity score if available
-    #         if 'clarity_score' in extracted_data:
-    #             clarity_score = float(extracted_data.get('clarity_score', 0))
-    #             if clarity_score < min_clarity_score:
-    #                 return {
-    #                     "status": "failed",
-    #                     "error_message": f"Signature for {director_key} has low clarity ({clarity_score:.2f}), required: {min_clarity_score:.2f}"
-    #                 }
-
-
-    #     # All directors pass the check
-    #     return {
-    #         "status": "passed",
-    #         "error_message": None
-    #     }
 
     def _validate_address_proof_rule(self, directors_validation: Dict, conditions: Dict) -> Dict:
         """
@@ -3043,63 +2736,6 @@ class DocumentValidationService:
             "details": None
         }
 
-    # def _validate_foreign_director_rule(self, directors_validation: Dict, conditions: Dict) -> Dict:
-    #     """
-    #     Validate passport or driving license for all foreign directors.
-
-    #     Args:
-    #         directors_validation (dict): Full validation data for all directors.
-    #         conditions (dict): Rule-specific conditions (if any).
-
-    #     Returns:
-    #         dict: Rule validation result with per-director error reporting.
-    #     """
-    #     failed_directors = []
-    #     safe_directors = self._safe_validate_directors(directors_validation)
-    #     passport_required = conditions.get('passport_required', True)
-
-            
-    #     for director_key, director_info in safe_directors.items():
-    #         if not isinstance(director_info, dict):
-    #             continue
-
-    #         if director_info.get('nationality', '').lower() != 'foreign':
-    #             continue
-
-    #         documents = director_info.get('documents', {})
-    #         passport = documents.get('passport', {})
-    #         driving_license = documents.get('drivingLicense', {})
-
-    #         has_passport = passport.get('is_valid', False)
-    #         has_license = driving_license.get('is_valid', False)
-
-    #         if not (has_passport or has_license):
-    #             # Check if panCard exists and is valid as alternative ID
-    #             pan_card = documents.get('panCard', {})
-    #             if not pan_card or not pan_card.get('is_valid', False):
-    #                 failed_directors.append({
-    #                     "director": director_key,
-    #                     "status": "failed",
-    #                     "error_message": "Passport or Driving License is required for foreign directors"
-    #                 })
-    #             else:
-    #                 # PanCard is being used as ID document
-    #                 self.logger.info(f"Using PAN card as ID document for foreign director {director_key}")
-
-    #     if failed_directors:
-    #         return {
-    #             "status": "failed",
-    #             "error_message": "; ".join(
-    #                 f"{d['director']}: {d['error_message']}" for d in failed_directors
-    #             ),
-    #             "details": failed_directors
-    #         }
-
-    #     return {
-    #         "status": "passed",
-    #         "error_message": None,
-    #         "details": None
-    #     }
     
 
     def _validate_company_address_proof_rule(self, company_docs_validation, conditions):
@@ -4301,74 +3937,7 @@ class DocumentValidationService:
             validation_result["certificate_validation"] = certificate_validation
         
         return validation_result
-    # def _validate_tm_applicant(self, applicant_data, rules):
-    #     """
-    #     Validate TM applicant information
-    #     """
-    #     validation_result = {
-    #         "is_valid": True,
-    #         "validation_errors": []
-    #     }
-        
-    #     # Validate applicant type
-    #     applicant_type = applicant_data.get('applicant_type')
-    #     if not applicant_type:
-    #         validation_result["is_valid"] = False
-    #         validation_result["validation_errors"].append("Missing applicant type")
-    #         return validation_result
-        
-    #     # Get TM_APPLICANT_TYPE rule
-    #     applicant_type_rule = next(
-    #         (rule for rule in rules if rule.get('rule_id') == 'TM_APPLICANT_TYPE'),
-    #         None
-    #     )
-    #     aadhaar_front = applicant_data.get("aadhaar_front")
-    #     aadhaar_back = applicant_data.get("aadhaar_back")
-
-    #     if aadhaar_front:
-    #         extracted_front = self.extraction_service.extract_document_data(aadhaar_front, "aadhar_front")
-    #         if not extracted_front :
-    #             validation_result["is_valid"] = False
-    #             validation_result["validation_errors"].append("Applicant Aadhaar Front is invalid or missing required data.")
-
-    #     if aadhaar_back:
-    #         extracted_back = self.extraction_service.extract_document_data(aadhaar_back, "aadhar_back")
-    #         if not extracted_back :
-    #             validation_result["is_valid"] = False
-    #             validation_result["validation_errors"].append("Applicant Aadhaar Back is invalid or missing required data.")
-    #     # aadhaar_validation = self._validate_applicant_aadhaar(extracted_front, extracted_back)
-    #     # if not aadhaar_validation["is_valid"]:
-    #     #     validation_result["is_valid"] = False
-    #     #     validation_result["validation_errors"].extend(aadhaar_validation["validation_errors"])
-        
-    #     if applicant_type_rule:
-    #         conditions = applicant_type_rule.get('conditions', {})
-    #         valid_types = conditions.get('valid_types', ['Individual', 'Company'])
-            
-    #         if applicant_type not in valid_types:
-    #             validation_result["is_valid"] = False
-    #             validation_result["validation_errors"].append(
-    #                 f"Invalid applicant type: {applicant_type}. Must be one of {', '.join(valid_types)}"
-    #             )
-        
-    #     # If Company, validate certificate requirements
-    #     if applicant_type == "Company":
-    #         certificate_validation = self._validate_tm_company_certificates(
-    #             applicant_data,
-    #             rules
-    #         )
-    #         # Merge validation results
-    #         if not certificate_validation["is_valid"]:
-    #             validation_result["is_valid"] = False
-    #             validation_result["validation_errors"].extend(
-    #                 certificate_validation["validation_errors"]
-    #             )
-            
-    #         # Add certificate validation details
-    #         validation_result["certificate_validation"] = certificate_validation
-        
-    #     return validation_result
-
+    
     def _validate_tm_company_certificates(self, applicant_data, rules):
         """
         Validate TM company certificates (MSME or DIPP)
@@ -4775,185 +4344,7 @@ class DocumentValidationService:
         """
         # Example for hash:
         return features1 == features2
-    # def _validate_verification_documents(self, verification_docs, brand_name, has_logo, already_in_use, applicant_data):
-    #     """
-    #     Validate trademark verification documents.
-    #     If logo is present and already in use, at least one verification doc must have either the brand name or logo.
-    #     """
-    #     validation_result = {
-    #         "is_valid": True,
-    #         "validation_errors": [],
-    #         "document_validations": {}
-    #     }
-
-    #     # Track if any doc has logo or brand name
-    #     logo_or_brand_name_found = False
-
-    #     for doc_key, doc_info in verification_docs.items():
-    #         doc_url = doc_info.get('url', '')
-    #         if not doc_url:
-    #             validation_result["is_valid"] = False
-    #             validation_result["validation_errors"].append(f"Missing URL for {doc_key}")
-    #             continue
-
-    #         try:
-    #             # Save base64 to temp file if needed
-    #             if isinstance(doc_url, str) and not (doc_url.startswith("http://") or doc_url.startswith("https://")):
-    #                 source = self._save_base64_to_tempfile(doc_url, "pdf")
-    #             else:
-    #                 source = doc_url
-
-    #             extracted_data = self.extraction_service.extract_document_data(
-    #                 source,
-    #                 'trademark_verification'
-    #             )
-
-    #             doc_validation = {
-    #                 "is_valid": True,
-    #                 "validation_errors": [],
-    #                 "url": doc_url,
-    #                 "extracted_data": extracted_data
-    #             }
-
-    #             if not extracted_data:
-    #                 doc_validation["is_valid"] = False
-    #                 doc_validation["validation_errors"].append(f"Failed to extract data from {doc_key}")
-    #             else:
-    #                 # Check for logo or brand name (only if has_logo is True)
-    #                 if has_logo and already_in_use:
-    #                     logo_visible = extracted_data.get('logo_visible', False)
-    #                     brand_names_found = extracted_data.get('brand_names_found') or []
-    #                     brand_name_match = any(
-    #                         self._names_match(brand_name, b) for b in brand_names_found if b
-    #                     )
-    #                     # If either logo or brand name is found, set flag
-    #                     if logo_visible or brand_name_match:
-    #                         logo_or_brand_name_found = True
-
-    #             validation_result["document_validations"][doc_key] = doc_validation
-
-    #         except Exception as e:
-    #             self.logger.error(f"Verification document validation error: {str(e)}", exc_info=True)
-    #             validation_result["document_validations"][doc_key] = {
-    #                 "is_valid": False,
-    #                 "validation_errors": [f"Error validating document: {str(e)}"],
-    #                 "url": doc_url
-    #             }
-
-    #     # Final check: if logo is required, at least one doc must have logo or brand name
-    #     if has_logo and not logo_or_brand_name_found:
-    #         validation_result["is_valid"] = False
-    #         validation_result["validation_errors"].append(
-    #             f"Neither logo nor brand name '{brand_name}' found in any verification document"
-    #         )
-
-    #     return validation_result
-    # def _validate_verification_documents(self, verification_docs, brand_name, has_logo, applicant_data):
-    #     """
-    #     Validate trademark verification documents
-    #     """
-    #     validation_result = {
-    #         "is_valid": True,
-    #         "validation_errors": [],
-    #         "document_validations": {}
-    #     }
-        
-    #     # Get company name
-    #     company_name = applicant_data.get('company_name', '')
-        
-    #     # Variables to track requirements
-    #     company_name_found = False
-    #     logo_or_brand_name_found = False
-        
-    #     # Process each verification document
-    #     for doc_key, doc_info in verification_docs.items():
-    #         doc_url = doc_info.get('url', '')
-            
-    #         if not doc_url:
-    #             validation_result["is_valid"] = False
-    #             validation_result["validation_errors"].append(f"Missing URL for {doc_key}")
-    #             continue
-            
-    #         # Extract data from document
-    #         try:
-    #             # Save base64 to temp file if needed
-    #             if isinstance(doc_url, str) and not (doc_url.startswith("http://") or doc_url.startswith("https://")):
-    #                 source = self._save_base64_to_tempfile(doc_url, "pdf")
-    #             else:
-    #                 source = doc_url
-    #             extracted_data = self.extraction_service.extract_document_data(
-    #                 source,
-    #                 'trademark_verification'
-    #             )
-                
-    #             # Validate document
-    #             doc_validation = {
-    #                 "is_valid": True,
-    #                 "validation_errors": [],
-    #                 "url": doc_url,
-    #                 "extracted_data": extracted_data
-    #             }
-                
-    #             if not extracted_data:
-    #                 doc_validation["is_valid"] = False
-    #                 doc_validation["validation_errors"].append(f"Failed to extract data from {doc_key}")
-    #             else:
-    #                 # Check for company name
-    #                 if company_name:
-    #                     company_name_visible = extracted_data.get('company_name_visible', False)
-                        
-    #                     if company_name_visible:
-    #                         company_name_found = True
-                    
-    #                 # Check for logo or brand name
-    #                 if has_logo:
-    #                     logo_visible = extracted_data.get('logo_visible', False)
-    #                     brand_names_found = extracted_data.get('brand_names_found') or []
-    #                     brand_name_match = any(
-    #                         self._names_match(brand_name, b) for b in brand_names_found if b
-    #                     )
-    #                     extracted_text = extracted_data.get('extracted_text', '').lower()
-    #                     brand_name_in_text = self._names_match(brand_name, extracted_text) if extracted_text else False
-
-    #                     brand_name_visible = brand_name_match or brand_name_in_text
-
-    #                     if logo_visible or brand_name_visible:
-    #                         logo_or_brand_name_found = True
-    #                         extracted_data['brand_name_visible'] = True
-    #                     else:
-    #                         extracted_data['brand_name_visible'] = False
-                       
-
-    #                 if company_name and company_name.lower() in (extracted_data.get('extracted_text', '').lower() or ''):
-    #                     company_name_found = True
-    #                 if has_logo and (brand_name.lower() in (extracted_data.get('extracted_text', '').lower() or '') or extracted_data.get('logo_visible', False)):
-    #                     logo_or_brand_name_found = True
-    #             # Store document validation
-    #             validation_result["document_validations"][doc_key] = doc_validation
-            
-    #         except Exception as e:
-    #             self.logger.error(f"Verification document validation error: {str(e)}", exc_info=True)
-    #             validation_result["document_validations"][doc_key] = {
-    #                 "is_valid": False,
-    #                 "validation_errors": [f"Error validating document: {str(e)}"],
-    #                 "url": doc_url
-    #             }
-        
-    #     # Check overall requirements
-    #     if not company_name_found and company_name:
-    #         validation_result["is_valid"] = False
-    #         validation_result["validation_errors"].append(
-    #             "Company name not found in any verification document"
-    #         )
-        
-    #     if has_logo and not logo_or_brand_name_found:
-    #         validation_result["is_valid"] = False
-    #         validation_result["validation_errors"].append(
-    #             f"Neither logo nor brand name '{brand_name}' found in any verification document"
-    #         )
-        
-    #     return validation_result
-
+    
     def _validate_brand_name_in_logo(self, trademark_data, applicant_data, rules):
         """
         Validate that the brand name is present in the logo file itself
@@ -5026,64 +4417,7 @@ class DocumentValidationService:
 
         # return validation_result
 
-    # def _validate_brand_name_in_logo(self, trademark_data, applicant_data, rules):
-    #     """
-    #     Validate that the brand name is present in the logo itself
-    #     """
-    #     validation_result = {
-    #         "status": "passed",
-    #         "error_message": None
-    #     }
-        
-    #     # Skip if logo is not used
-    #     has_logo = trademark_data.get('Logo') == "Yes"
-    #     if not has_logo:
-    #         return validation_result
-        
-    #     # Get brand name
-    #     brand_name = trademark_data.get('BrandName', '')
-    #     if not brand_name:
-    #         validation_result["status"] = "failed"
-    #         validation_result["error_message"] = "Brand name is required for logo validation"
-    #         return validation_result
-        
-    #     # Get verification documents if already in use
-    #     already_in_use = trademark_data.get('AlreadyInUse') == "Yes"
-    #     if already_in_use:
-    #         verification_docs = trademark_data.get('VerificationDocs', {})
-            
-    #         # Check if any verification document has logo with brand name
-    #         brand_name_in_logo_found = False
-    #         for doc_key, doc_info in verification_docs.items():
-    #             doc_url = doc_info.get('url', '')
-                
-    #             if not doc_url:
-    #                 continue
-                
-    #             # Extract data from document
-    #             try:
-    #                 extracted_data = self.extraction_service.extract_document_data(
-    #                     doc_url,
-    #                     'trademark_verification'
-    #                 )
-                    
-    #                 if extracted_data:
-    #                     # Check if logo has brand name
-    #                     logo_visible = extracted_data.get('logo_visible', False)
-    #                     brand_in_logo = extracted_data.get('brand_name_in_logo', False)
-                        
-    #                     if logo_visible and brand_in_logo:
-    #                         brand_name_in_logo_found = True
-    #                         break
-                
-    #             except Exception as e:
-    #                 self.logger.error(f"Error checking brand name in logo: {str(e)}", exc_info=True)
-            
-    #         if not brand_name_in_logo_found:
-    #             validation_result["status"] = "failed"
-    #             validation_result["error_message"] = f"Brand name '{brand_name}' not found in any logo"
-        
-    #     return validation_result
+    
 
     def _apply_tm_rules(self, validation_results, rules):
         """
@@ -5310,3 +4644,536 @@ class DocumentValidationService:
                 }
         
         return formatted_result
+    
+    def validate_gst_own_documents(self, service_id, request_id, nationality, gst_documents):
+        """
+        Validate GST Own Property documents (flat, not per-director).
+        """
+        start_time = time.time()
+        compliance_rules = self._get_compliance_rules(service_id)
+        # rules = compliance_rules.get("rules", [])
+        rules = self._extract_rules_from_compliance_data(compliance_rules)
+        # Prepare result containers
+        validation_rules = {}
+        document_validation = {}
+        errors = []
+
+        # Helper: get doc (base64 or url)
+        def get_doc(doc):
+            if not doc:
+                return None
+            if isinstance(doc, str):
+                if doc.startswith("http"):
+                    return {"url": doc}
+                else:
+                    return {"base64": doc}
+            return None
+
+        # Validate each rule
+        for rule in rules:
+            rule_id = rule.get("rule_id")
+            conditions = rule.get("conditions", {})
+            status = "passed"
+            error_message = None
+
+            # Passport Photo
+            if rule_id == "PASSPORT_PHOTO":
+                result = self._validate_passport_photo_gst(get_doc(gst_documents.get("passport_photo")), conditions)
+                validation_rules[rule_id] = result
+
+            # Signature
+            elif rule_id == "SIGNATURE":
+                result = self._validate_signature_gst(get_doc(gst_documents.get("signature")), conditions)
+                validation_rules[rule_id] = result
+
+            # Address Proof
+            # elif rule_id == "ADDRESS_PROOF":
+            #     result = self._validate_address_proof_gst(get_doc(gst_documents.get("address_proof")), conditions)
+            #     validation_rules[rule_id] = result
+
+            # PAN (skip for foreign)
+            elif rule_id == "INDIAN_DIRECTOR_PAN":
+                if nationality.lower() == "indian":
+                    result = self._validate_pan_gst(get_doc(gst_documents.get("pan")), conditions)
+                    validation_rules[rule_id] = result
+                else:
+                    validation_rules[rule_id] = {"status": "skipped", "error_message": "Not required for foreign nationality"}
+
+            # Aadhaar (skip for foreign)
+            elif rule_id == "INDIAN_DIRECTOR_AADHAR":
+                if nationality.lower() == "indian":
+                    result = self._validate_aadhar_gst(get_doc(gst_documents.get("aadhar_front")), get_doc(gst_documents.get("aadhar_back")), conditions)
+                    validation_rules[rule_id] = result
+                else:
+                    validation_rules[rule_id] = {"status": "skipped", "error_message": "Not required for foreign nationality"}
+
+            # NOC
+            elif rule_id == "NOC_VALIDATION":
+                result = self._validate_noc_gst(get_doc(gst_documents.get("noc")), conditions)
+                validation_rules[rule_id] = result
+
+            # Aadhar-PAN Linkage (skip for foreign)
+            elif rule_id == "AADHAR_PAN_LINKAGE":
+                if nationality.lower() == "indian":
+                    result = self._validate_aadhar_pan_linkage_gst(get_doc(gst_documents.get("aadhar_front")), get_doc(gst_documents.get("pan")), conditions)
+                    validation_rules[rule_id] = result
+                else:
+                    validation_rules[rule_id] = {"status": "skipped", "error_message": "Not required for foreign nationality"}
+
+            # EB/Property Tax and Name/DOB Match: to be implemented later
+            # elif rule_id == "EB_PROPERTY_TAX_VALIDATION":
+            elif rule_id == "EB_PROPERTY_TAX_VALIDATION":
+                result = self._validate_eb_property_tax_gst(
+                    get_doc(gst_documents.get("electricity_bill")),
+                    # get_doc(gst_documents.get("property_tax")),
+                    conditions
+                )
+                validation_rules[rule_id] = result
+                # validation_rules[rule_id] = {"status": "skipped", "error_message": "Validation not implemented yet"}
+            elif rule_id == "AADHAR_PAN_NAME_DOB_MATCH":
+                if nationality.lower() == "indian":
+                    result = self._validate_aadhar_pan_name_dob_match_gst(
+                        get_doc(gst_documents.get("aadhar_front")),
+                        get_doc(gst_documents.get("pan")),
+                        conditions
+                    )
+                    validation_rules[rule_id] = result
+                else:
+                    validation_rules[rule_id] = {"status": "skipped", "error_message": "Not required for foreign nationality"}
+                # validation_rules[rule_id] = {"status": "skipped", "error_message": "Validation not implemented yet"}
+            else:
+                validation_rules[rule_id] = {"status": "skipped", "error_message": "Rule not handled"}
+
+        # Document validation output (for UI)
+        document_validation["gst_documents"] = {
+            k: ("Uploaded" if v else "Missing") for k, v in gst_documents.items()
+        }
+
+        # Compliance
+        is_compliant = all(v.get("status") == "passed" or v.get("status") == "skipped" for v in validation_rules.values())
+
+        # Prepare results
+        standard_result = {
+            "validation_rules": validation_rules,
+            "document_validation": document_validation
+        }
+        detailed_result = {
+            "validation_rules": validation_rules,
+            "document_validation": document_validation,
+            "metadata": {
+                "service_id": service_id,
+                "request_id": request_id,
+                "timestamp": datetime.now().isoformat(),
+                "processing_time": time.time() - start_time,
+                "is_compliant": is_compliant
+            }
+        }
+        return standard_result, detailed_result
+
+    # --- GST Rule Functions (adapted from director/company logic, but flat) ---
+
+    def _validate_passport_photo_gst(self, doc, conditions):
+        # Use the same logic as _validate_passport_photo_rule, but for a single doc
+        if not doc:
+            return {"status": "failed", "error_message": "Passport photo missing"}
+        extracted = self.extraction_service.extract_document_data(doc, "passport_photo")
+        clarity = extracted.get("clarity_score", 0)
+        if clarity < conditions.get("min_clarity_score", 0.7):
+            return {"status": "failed", "error_message": f"Low clarity score: {clarity}"}
+        if not extracted.get("is_passport_style", False):
+            return {"status": "failed", "error_message": "Not a passport style photo"}
+        if not extracted.get("face_visible", False):
+            return {"status": "failed", "error_message": "Face not visible"}
+        return {"status": "passed", "error_message": None}
+
+    def _validate_signature_gst(self, doc, conditions):
+        # Use the same logic as _validate_signature_rule, but for a single doc
+        if not doc:
+            return {"status": "failed", "error_message": "Signature missing"}
+        extracted = self.extraction_service.extract_document_data(doc, "signature")
+        clarity = extracted.get("clarity_score", 0)
+        if clarity < conditions.get("min_clarity_score", 0.7):
+            return {"status": "failed", "error_message": f"Low clarity score: {clarity}"}
+        if not extracted.get("is_handwritten", False):
+            return {"status": "failed", "error_message": "Signature not handwritten"}
+        if not extracted.get("is_complete", False):
+            return {"status": "failed", "error_message": "Signature not complete"}
+        return {"status": "passed", "error_message": None}
+
+    # def _validate_address_proof_gst(self, doc, conditions):
+    #     # Use the same logic as _validate_address_proof_rule, but for a single doc
+    #     if not doc:
+    #         return {"status": "failed", "error_message": "Address proof missing"}
+    #     extracted = self.extraction_service.extract_document_data(doc, "address_proof")
+    #     # Check recency
+    #     doc_date = extracted.get("date")
+    #     if doc_date:
+    #         try:
+    #             doc_dt = parser.parse(doc_date, dayfirst=True)
+    #             if (datetime.now() - doc_dt).days > conditions.get("max_age_days", 45):
+    #                 return {"status": "failed", "error_message": "Address proof too old"}
+    #         except Exception:
+    #             return {"status": "failed", "error_message": "Invalid date format in address proof"}
+    #     if not extracted.get("complete_address_visible", True):
+    #         return {"status": "failed", "error_message": "Complete address not visible"}
+    #     # Name match check (if required)
+    #     if conditions.get("name_match_required", False):
+    #         # For GST, you may want to compare with a provided name (not in this flat input)
+    #         pass
+    #     return {"status": "passed", "error_message": None}
+
+    def _validate_pan_gst(self, doc, conditions):
+        # Use the same logic as _validate_indian_pan_rule, but for a single doc
+        if not doc:
+            return {"status": "failed", "error_message": "PAN card missing"}
+        extracted = self.extraction_service.extract_document_data(doc, "pan")
+        clarity = extracted.get("clarity_score", 0)
+        if clarity < conditions.get("min_clarity_score", 0.7):
+            return {"status": "failed", "error_message": f"Low clarity score: {clarity}"}
+        # Age check
+        dob = extracted.get("dob")
+        if dob:
+            try:
+                dob_dt = parser.parse(dob, dayfirst=True)
+                age = (datetime.now() - dob_dt).days // 365
+                if age < conditions.get("min_age", 18):
+                    return {"status": "failed", "error_message": "Director must be 18+"}
+            except Exception:
+                return {"status": "failed", "error_message": "Invalid DOB format in PAN"}
+        return {"status": "passed", "error_message": None}
+
+    def _validate_aadhar_gst(self, front_doc, back_doc, conditions):
+        # Use the same logic as _validate_indian_aadhar_rule, but for two docs
+        if not front_doc or not back_doc:
+            return {"status": "failed", "error_message": "Aadhar front/back missing"}
+        front = self.extraction_service.extract_document_data(front_doc, "aadhar_front")
+        back = self.extraction_service.extract_document_data(back_doc, "aadhar_back")
+        if conditions.get("masked_not_allowed", True) and (front.get("is_masked") or back.get("is_masked")):
+            return {"status": "failed", "error_message": "Masked Aadhar not allowed"}
+        # if conditions.get("different_images_required", True) and front.get("base64") == back.get("base64"):
+        #     return {"status": "failed", "error_message": "Aadhar front and back must be different images"}
+        return {"status": "passed", "error_message": None}
+
+    # def _validate_noc_gst(self, doc, conditions):
+    #     # Use the same logic as _validate_noc_rule, but for a single doc
+    #     if not doc:
+    #         return {"status": "failed", "error_message": "NOC missing"}
+    #     extracted = self.extraction_service.extract_document_data(doc, "noc")
+    #     if conditions.get("signature_required", True) and not extracted.get("signature_present", False):
+    #         return {"status": "failed", "error_message": "Signature not present in NOC"}
+    #     return {"status": "passed", "error_message": None}
+
+    # def _validate_aadhar_pan_linkage_gst(self, aadhar_doc, pan_doc, conditions):
+    #     # Use the same logic as _validate_aadhar_pan_linkage_rule, but for two docs
+    #     if not aadhar_doc or not pan_doc:
+    #         return {"status": "failed", "error_message": "Aadhar or PAN missing for linkage check"}
+    #     # Simulate API check or use your existing linkage logic
+    #     linked = self.aadhar_pan_linkage_service.check_linkage(aadhar_doc, pan_doc)
+    #     if not linked:
+    #         return {"status": "failed", "error_message": "Aadhar and PAN are not linked"}
+    #     return {"status": "passed", "error_message": None}
+
+    # # _validate_eb_property_tax_gst and _validate_aadhar_pan_name_dob_match_gst to be implemented later
+    def _validate_aadhar_pan_linkage_gst(self, aadhar_doc, pan_doc, conditions):
+        """
+        Validate Aadhar PAN linkage for GST Own Property (flat input, not per-director).
+        Args:
+            aadhar_doc (dict): Aadhar document (base64/url or extracted_data)
+            pan_doc (dict): PAN document (base64/url or extracted_data)
+            conditions (dict): Rule conditions
+        Returns:
+            dict: Validation result
+        """
+        linkage_api_check_required = conditions.get('linkage_api_check_required', True)
+        if not linkage_api_check_required:
+            return {
+                "status": "passed",
+                "error_message": None
+            }
+
+        # Extract data
+        aadhar_data = {}
+        pan_data = {}
+        if aadhar_doc:
+            if "extracted_data" in aadhar_doc:
+                aadhar_data = aadhar_doc["extracted_data"]
+            else:
+                aadhar_data = self.extraction_service.extract_document_data(aadhar_doc, "aadhar_front")
+        if pan_doc:
+            if "extracted_data" in pan_doc:
+                pan_data = pan_doc["extracted_data"]
+            else:
+                pan_data = self.extraction_service.extract_document_data(pan_doc, "pan")
+
+        # Get Aadhar number (try to handle masked)
+        aadhar_number = aadhar_data.get('aadhar_number', '')
+        if aadhar_data.get('is_masked', False):
+            return {
+                "status": "failed",
+                "error_message": "Masked Aadhar number not allowed for linkage check"
+            }
+        pan_number = pan_data.get('pan_number', '')
+
+        if not aadhar_number or 'XXXX' in aadhar_number:
+            return {
+                "status": "failed",
+                "error_message": "Masked or missing Aadhar number"
+            }
+        if not pan_number:
+            return {
+                "status": "failed",
+                "error_message": "Missing PAN number"
+            }
+
+        formatted_aadhar = re.sub(r'\D', '', aadhar_number)
+        try:
+            self.logger.info(f"Verifying Aadhar-PAN linkage: Aadhar={formatted_aadhar}, PAN={pan_number}")
+            linkage_result = self.aadhar_pan_linkage_service.verify_linkage(
+                formatted_aadhar,
+                pan_number
+            )
+            self.logger.info(f"Linkage result: {linkage_result}")
+            if not linkage_result.get('is_linked', False):
+                error_message = linkage_result.get('message', 'Unknown error')
+                return {
+                    "status": "failed",
+                    "error_message": f"Aadhar and PAN not linked: {error_message}"
+                }
+            return {
+                "status": "passed",
+                "error_message": None
+            }
+        except Exception as e:
+            self.logger.error(f"Error verifying Aadhar-PAN linkage: {str(e)}", exc_info=True)
+            return {
+                "status": "failed",
+                "error_message": f"Error during Aadhar-PAN linkage verification: {str(e)}"
+            }
+
+    def _validate_noc_gst(self, doc, conditions):
+        """
+        Validate No Objection Certificate (NOC) for GST Own Property (flat input, not per-director).
+        Args:
+            doc (dict): NOC document (base64/url or extracted_data)
+            conditions (dict): Rule conditions
+        Returns:
+            dict: Validation result
+        """
+        noc_required = conditions.get('noc_required', True)
+        signature_required = conditions.get('signature_required', True)
+
+        if not doc and noc_required:
+            return {
+                "status": "failed",
+                "error_message": "No Objection Certificate (NOC) is required but not provided"
+            }
+
+        # Extract data
+        extracted_data = {}
+        if doc:
+            if "extracted_data" in doc:
+                extracted_data = doc["extracted_data"]
+            else:
+                extracted_data = self.extraction_service.extract_document_data(doc, "noc")
+
+        validation_checks = []
+
+        # Check for mandatory fields
+        mandatory_fields = ['owner_name', 'property_address', 'applicant_name', 'date']
+        missing_fields = [field for field in mandatory_fields if not extracted_data.get(field)]
+        if missing_fields:
+            validation_checks.append(f"Missing mandatory NOC fields: {', '.join(missing_fields)}")
+
+        # Date validation - should be recent (within last 90 days)
+        if 'date' in extracted_data:
+            try:
+                noc_date = self._parse_date(extracted_data['date'])
+                if noc_date:
+                    today = datetime.now()
+                    noc_age = (today - noc_date).days
+                    if noc_age > 90:
+                        validation_checks.append(f"NOC is {noc_age} days old (exceeds 90 days limit)")
+            except Exception as e:
+                validation_checks.append(f"Invalid NOC date: {str(e)}")
+
+        # Signature validation
+        if signature_required:
+            has_signature = extracted_data.get('has_signature', False)
+            if not has_signature:
+                validation_checks.append("NOC lacks required property owner's signature")
+
+        # Property address check
+        if 'property_address' in extracted_data:
+            address = extracted_data['property_address']
+            if not address or len(address.strip()) < 10:
+                validation_checks.append("Incomplete or invalid property address")
+
+        # Purpose validation
+        purpose = extracted_data.get('purpose', '')
+        if not purpose or len(purpose.strip()) < 5:
+            validation_checks.append("Invalid or missing purpose in NOC")
+
+        # Owner/applicant name
+        owner_name = extracted_data.get('owner_name', '').strip()
+        applicant_name = extracted_data.get('applicant_name', '').strip()
+        if not owner_name or not applicant_name:
+            validation_checks.append("Missing owner or applicant name")
+
+        # If any validation checks failed, return failure
+        if validation_checks:
+            return {
+                "status": "failed",
+                "error_message": "; ".join(validation_checks)
+            }
+
+        # Clarity score check
+        clarity_score = extracted_data.get('clarity_score', 0)
+        if clarity_score < 0.7:
+            return {
+                "status": "failed",
+                "error_message": f"Low document clarity: {clarity_score}"
+            }
+
+        # Validate NOC is marked as valid
+        is_valid_noc = extracted_data.get('is_valid_noc', False)
+        if not is_valid_noc:
+            return {
+                "status": "failed",
+                "error_message": "Document does not appear to be a valid NOC"
+            }
+
+        return {
+            "status": "passed",
+            "error_message": None
+        }
+    
+    def _validate_aadhar_pan_name_dob_match_gst(self, aadhar_doc, pan_doc, conditions):
+        """
+        Validate that names and DOB on Aadhar and PAN match (GST Own, flat input).
+        Args:
+            aadhar_doc (dict): Aadhar document (base64/url or extracted_data)
+            pan_doc (dict): PAN document (base64/url or extracted_data)
+            conditions (dict): Rule conditions
+        Returns:
+            dict: Validation result
+        """
+        if not aadhar_doc or not pan_doc:
+            return {"status": "failed", "error_message": "Aadhar or PAN missing for name/DOB match"}
+
+        # Extract data
+        aadhar_data = {}
+        pan_data = {}
+        if "extracted_data" in aadhar_doc:
+            aadhar_data = aadhar_doc["extracted_data"]
+        else:
+            aadhar_data = self.extraction_service.extract_document_data(aadhar_doc, "aadhar_front")
+        if "extracted_data" in pan_doc:
+            pan_data = pan_doc["extracted_data"]
+        else:
+            pan_data = self.extraction_service.extract_document_data(pan_doc, "pan")
+
+        errors = []
+        # Name match
+        if conditions.get("name_match_required", True):
+            aadhar_name = (aadhar_data.get("name") or "").strip().lower()
+            pan_name = (pan_data.get("name") or "").strip().lower()
+            tolerance = float(conditions.get("exact_match_tolerance", 0.95))
+            # Simple exact match or fuzzy match
+            if not aadhar_name or not pan_name:
+                errors.append("Name missing in Aadhar or PAN")
+            elif aadhar_name != pan_name:
+                # Optionally, use fuzzy matching if needed
+                from difflib import SequenceMatcher
+                ratio = SequenceMatcher(None, aadhar_name, pan_name).ratio()
+                if ratio < tolerance:
+                    errors.append(f"Names do not match (similarity: {ratio:.2f})")
+        # DOB match
+        if conditions.get("dob_match_required", True):
+            aadhar_dob = (aadhar_data.get("dob") or "").strip()
+            pan_dob = (pan_data.get("dob") or "").strip()
+            if not aadhar_dob or not pan_dob:
+                errors.append("DOB missing in Aadhar or PAN")
+            elif aadhar_dob != pan_dob:
+                errors.append("DOB does not match between Aadhar and PAN")
+
+        if errors:
+            return {"status": "failed", "error_message": "; ".join(errors)}
+        return {"status": "passed", "error_message": None}
+    # _validate_eb_property_tax_gst and _validate_aadhar_pan_name_dob_match_gst to be implemented later
+
+    def _validate_eb_property_tax_gst(self, eb_doc, conditions):
+        """
+        Validate Electricity Bill and Property Tax Receipt for GST Own Property.
+        Args:
+            eb_doc (dict): Electricity bill document (base64/url or extracted_data)
+            # property_tax_doc (dict): Property tax receipt document (base64/url or extracted_data)
+            conditions (dict): Rule conditions
+        Returns:
+            dict: Validation result
+        """
+        errors = []
+        # Extract data
+        eb_data = {}
+        # property_tax_data = {}
+        if eb_doc:
+            if "extracted_data" in eb_doc:
+                eb_data = eb_doc["extracted_data"]
+            else:
+                eb_data = self.extraction_service.extract_document_data(eb_doc, "elec_bill")
+        # if property_tax_doc:
+        #     if "extracted_data" in property_tax_doc:
+        #         property_tax_data = property_tax_doc["extracted_data"]
+        #     else:
+        #         property_tax_data = self.extraction_service.extract_document_data(property_tax_doc, "property_tax")
+
+        # 1. Complete address and landlord name
+        if conditions.get("complete_address_required", True):
+            address = eb_data.get("address", "") or ""
+            if not address or len(address.strip()) < 10:
+                errors.append("Complete address not found in electricity bill")
+        if conditions.get("landlord_name_required", True):
+            landlord_name = eb_data.get("consumer_name", "") or ""
+            if not landlord_name or len(landlord_name.strip()) < 3:
+                errors.append("Landlord name not found in electricity bill")
+
+        # 2. EB bill recency
+        if conditions.get("eb_bill_max_age_days"):
+            bill_date = eb_data.get("bill_date") or eb_data.get("date")
+            if bill_date:
+                try:
+                    bill_dt = parser.parse(bill_date, dayfirst=True)
+                    if (datetime.now() - bill_dt).days > int(conditions["eb_bill_max_age_days"]):
+                        errors.append(f"Electricity bill is older ({(datetime.now() - bill_dt).days} days) than allowed ({conditions['eb_bill_max_age_days']} days)")
+                except Exception:
+                    errors.append("Invalid date format in electricity bill")
+            else:
+                errors.append("Bill date not found in electricity bill")
+
+        # 3. Notarization for specific states
+        state = eb_data.get("state", "") or ""
+        mandatory_states = [s.lower() for s in conditions.get("eb_bill_mandatory_states", [])]
+        if state.lower() in mandatory_states:
+            if not eb_data.get("is_notarized", False):
+                errors.append(f"Electricity bill must be notarized for {state}")
+
+        # # 4. Property tax receipt for current FY
+        # if conditions.get("property_tax_current_fy_required", True):
+        #     fy = property_tax_data.get("financial_year", "")
+        #     now = datetime.now()
+        #     fy_start = now.year if now.month >= 4 else now.year - 1
+        #     fy_end = fy_start + 1
+        #     expected_fy = f"{fy_start}-{str(fy_end)[-2:]}"
+        #     if not fy or expected_fy not in fy:
+        #         errors.append(f"Property tax receipt is not for current FY ({expected_fy})")
+
+        # # 5. Both documents required
+        # if conditions.get("both_documents_required", True):
+        #     if not eb_doc:
+        #         errors.append("Electricity bill document missing")
+        #     if not property_tax_doc:
+        #         errors.append("Property tax receipt document missing")
+
+        if errors:
+            return {"status": "failed", "error_message": "; ".join(errors)}
+        return {"status": "passed", "error_message": None}
+

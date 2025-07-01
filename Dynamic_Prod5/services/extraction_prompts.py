@@ -491,3 +491,35 @@ def get_trademark_verification_document_prompt():
     
     If a field is not found, use null.
     """
+
+def get_elec_bill_extraction_prompt():
+    """
+    Generate electricity/utility bill extraction prompt for GST validation.
+    """
+    return """
+    Extract the following information from the electricity bill:
+    - Consumer Name (landlord name)
+    - Bill Date (in DD/MM/YYYY format)
+    - Due Date (in DD/MM/YYYY format)
+    - Total Amount
+    - Connection Address (complete address)
+    - State (where the bill is issued)
+    - Is the bill notarized? (yes/no)
+    - Is the document clear and readable? (Rate clarity on a scale of 0 to 1)
+    - Is the complete address visible? (yes/no)
+
+    Return a JSON with these exact keys:
+    {
+        "consumer_name": "Name on bill (landlord name)",
+        "bill_date": "DD/MM/YYYY",
+        "due_date": "DD/MM/YYYY",
+        "total_amount": "Amount",
+        "address": "Complete address",
+        "state": "State name",
+        "is_notarized": true/false,
+        "clarity_score": 0.95,
+        "complete_address_visible": true/false
+    }
+
+    If a field is not found, use null.
+    """
