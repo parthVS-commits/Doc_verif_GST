@@ -303,6 +303,23 @@ class DocumentValidationService:
                         "landlord_name_required": True,
                         "eb_bill_mandatory_states": ["Madhya Pradesh", "Maharashtra"]
                     }
+                },
+                {
+                    "rule_id": "CONSENT_LETTER_VALIDATION",
+                    "rule_name": "Consent Letter Validation",
+                    "description": "Consent letter must be notarized on all pages, include firm name, state rent-free provision, have landlord signature with date/place, and landlord details must match EB bill and property tax receipt",
+                    "severity": "high",
+                    "is_active": true,
+                    "conditions": {
+                        "notary_seal_required_all_pages": true,
+                        "firm_name_required": true,
+                        "rent_free_statement_required": true,
+                        "landlord_signature_required": true,
+                        "stamp_required": true,
+                        "landlord_name_match_eb_property_tax": true,
+                        "landlord_address_match_eb_property_tax": true,
+                        "min_clarity_score": 0.7
+                    }
                 }
             ]
         }
@@ -4741,6 +4758,19 @@ class DocumentValidationService:
                 else:
                     validation_rules[rule_id] = {"status": "skipped", "error_message": "Not required for foreign nationality"}
                 # validation_rules[rule_id] = {"status": "skipped", "error_message": "Validation not implemented yet"}
+            elif rule_id == "CONSENT_LETTER_VALIDATION":
+                # Extract EB/property tax data for landlord match if needed
+                eb_doc = get_doc(gst_documents.get("electricity_bill"))
+                eb_data = self.extraction_service.extract_document_data(eb_doc, "electricity_bill") if eb_doc else {}
+                # property_tax_doc = get_doc(gst_documents.get("property_tax"))
+                # property_tax_data = self.extraction_service.extract_document_data(property_tax_doc, "property_tax") if property_tax_doc else {}
+                result = self._validate_consent_letter_gst(
+                    get_doc(gst_documents.get("consent_letter")),
+                    conditions,
+                    eb_data=eb_data
+                    # property_tax_data=None  # Add if you support property tax extraction
+                )
+                validation_rules[rule_id] = result
             else:
                 validation_rules[rule_id] = {"status": "skipped", "error_message": "Rule not handled"}
 
@@ -5177,3 +5207,73 @@ class DocumentValidationService:
             return {"status": "failed", "error_message": "; ".join(errors)}
         return {"status": "passed", "error_message": None}
 
+    def _validate_consent_letter_gst(self, doc, conditions, eb_data=None):
+        """
+        Validate Consent Letter for GST Family Owned Property.
+        Args:
+            doc (dict): Consent letter document (base64/url or extracted_data)
+            conditions (dict): Rule conditions
+            eb_data (dict): Extracted EB bill data (optional, for landlord match)
+            property_tax_data (dict): Extracted property tax data (optional, for landlord match)
+        Returns:
+            dict: Validation result
+        """
+        if not doc:
+            return {"status": "failed", "error_message": "Consent letter missing"}
+
+        if "extracted_data" in doc:
+            data = doc["extracted_data"]
+        else:
+            data = self.extraction_service.extract_document_data(doc, "consent_letter")
+
+        errors = []
+
+        # Notary seal on all pages
+        if conditions.get("notary_seal_required_all_pages", True) and not data.get("notary_seal_all_pages", False):
+            errors.append("Notary seal missing on all pages")
+        
+        if conditions.get("stamp_required", True) and not data.get("on_stamp_paper", False):
+            errors.append("Stamp missing on consent letter")
+
+        # Firm name
+        if conditions.get("firm_name_required", True) and not data.get("firm_name"):
+            errors.append("Firm name missing")
+
+        # Rent-free statement
+        if conditions.get("rent_free_statement_required", True) and not data.get("rent_free_statement", False):
+            errors.append("Rent-free statement missing")
+
+        # Landlord signature
+        if conditions.get("landlord_signature_required", True) and not data.get("landlord_signature_with_date_place", False):
+            errors.append("Landlord signature with date and place missing")
+
+        # # Date and place
+        # if conditions.get("date_place_required", True) and not data.get("date_place"):
+        #     errors.append("Date/place of signature missing")
+
+        # Clarity score
+        if data.get("clarity_score", 0) < conditions.get("min_clarity_score", 0.7):
+            errors.append(f"Low document clarity: {data.get('clarity_score', 0)}")
+
+        # Landlord name/address match with EB/property tax
+        if conditions.get("landlord_name_match_eb_property_tax", True):
+            consent_name = (data.get("landlord_name") or "").strip().lower()
+            eb_name = (eb_data.get("consumer_name") or "").strip().lower() if eb_data else ""
+            # property_tax_name = (property_tax_data.get("landlord_name") or "").strip().lower() if property_tax_data else ""
+            # if consent_name and (consent_name != eb_name and consent_name != property_tax_name):
+            #     errors.append("Landlord name does not match EB bill or property tax receipt")
+            if consent_name and (consent_name != eb_name):
+                errors.append("Landlord name does not match EB bill")
+
+        if conditions.get("landlord_address_match_eb_property_tax", True):
+            consent_addr = (data.get("landlord_address") or "").strip().lower()
+            eb_addr = (eb_data.get("address") or "").strip().lower() if eb_data else ""
+            # property_tax_addr = (property_tax_data.get("landlord_address") or "").strip().lower() if property_tax_data else ""
+            # if consent_addr and (consent_addr != eb_addr and consent_addr != property_tax_addr):
+            #     errors.append("Landlord address does not match EB bill or property tax receipt")
+            if consent_addr and (consent_addr != eb_addr):
+                errors.append("Landlord address does not match EB bill")
+
+        if errors:
+            return {"status": "failed", "error_message": "; ".join(errors)}
+        return {"status": "passed", "error_message": None}
