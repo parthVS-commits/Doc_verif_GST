@@ -346,6 +346,16 @@ class DocumentValidationService:
                         "stamp_paper_verification": True,
                         "min_clarity_score": 0.7
                     }
+                },
+                {
+                    "rule_id": "NOC_OWNER_VALIDATION",
+                    "rule_name": "NOC Owner Name Validation",
+                    "description": "Verify NOC owner name matches API returned owner name",
+                    "severity": "high",
+                    "is_active": True,
+                    "conditions": {
+                        "api_check_required": True
+                    }
                 }
             ]
         }
@@ -526,7 +536,7 @@ class DocumentValidationService:
                 company_docs_validation = self._validate_company_documents(
                     input_data.get('companyDocuments', {}),
                     input_data.get('directors', {}),
-                    compliance_rules,
+                    compliance_rules, service_id,
                     preconditions
                 )
                 
@@ -1719,7 +1729,7 @@ class DocumentValidationService:
         self, 
         company_docs: Dict[str, Any],
         directors: Dict,
-        compliance_rules: Dict,
+        compliance_rules: Dict, service_id,
         preconditions: Dict = None
     ) -> Dict[str, Any]:
         """
@@ -1900,7 +1910,7 @@ class DocumentValidationService:
                             is_noc_valid = True
                             
                             # Validate NOC Owner Name if preconditions are provided
-                            if noc_data and preconditions and 'owner_name' in preconditions:
+                            if service_id in ("2", "3") and noc_data and preconditions and 'owner_name' in preconditions:
                                 noc_owner_rule = next(
                                     (rule for rule in rules if rule.get('rule_id') == 'NOC_OWNER_VALIDATION'), 
                                     None
@@ -3860,7 +3870,7 @@ class DocumentValidationService:
                 company_docs_validation = self._validate_company_documents(
                     input_data.get('companyDocuments', {}),
                     input_data.get('directors', {}),
-                    rules
+                    rules, service_id
                 )
                 validation_results["company_documents_validation"] = company_docs_validation
             
@@ -5188,8 +5198,6 @@ class DocumentValidationService:
                 eb_data = eb_doc["extracted_data"]
             else:
                 eb_data = self.extraction_service.extract_document_data(eb_doc, "elec_bill")
-        else:
-            return {"status": "failed", "error_message": "Electricity bill / property tax receipt missing"}
         # if property_tax_doc:
         #     if "extracted_data" in property_tax_doc:
         #         property_tax_data = property_tax_doc["extracted_data"]
