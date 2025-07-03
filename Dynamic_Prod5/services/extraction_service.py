@@ -18,6 +18,7 @@ import numpy as np
 # Import extraction prompts
 from .extraction_prompts import (
     get_aadhar_extraction_prompt,
+    get_rental_agreement_extraction_prompt,
     get_pan_extraction_prompt,
     get_passport_extraction_prompt,
     get_driving_license_extraction_prompt,
@@ -508,7 +509,8 @@ class ExtractionService:
             'board_resolution': get_board_resolution_extraction_prompt(),
             'msme_certificate': get_msme_certificate_extraction_prompt(),
             'dipp_certificate': get_dipp_certificate_extraction_prompt(),
-            'trademark_verification': get_trademark_verification_document_prompt()
+            'trademark_verification': get_trademark_verification_document_prompt(),
+            'rental_agreement': get_rental_agreement_extraction_prompt()
         }
         
         return extraction_prompts.get(

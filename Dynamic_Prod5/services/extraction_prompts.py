@@ -533,7 +533,7 @@ def get_consent_letter_extraction_prompt():
     - Is there a notary seal on every page? (yes/no)
     - Is the document executed on stamp paper? (yes/no)
     - Firm name mentioned (string)
-    - Does the letter state rent-free provision? (yes/no)
+    - Does the letter contain "rent free" or "rent-free" provision? (yes/no)
     - Landlord's signature with date and place is present? (yes/no)
     - Landlord's name (string)
     - Landlord's address (string)
@@ -548,6 +548,30 @@ def get_consent_letter_extraction_prompt():
         "landlord_signature_with_date_place": true/false,
         "landlord_name": "Landlord Name",
         "landlord_address": "Landlord Address",
+        "clarity_score": 0.95
+    }
+
+    If a field is not found, use null.
+    """
+
+def get_rental_agreement_extraction_prompt():
+    """
+    Generate Rental Agreement extraction prompt for GST Rental Property
+    """
+    return """
+    Extract the following information from the Rental Agreement:
+    - Is there a notary seal on every page (check all edges and corners of each page if notary seal is present) ? (yes/no)
+    - Is the agreement executed on stamp paper? (yes/no)
+    - Notary seal verification (yes/no)
+    - Stamp paper verification (yes/no)
+    - Clarity score (0 to 1)
+
+    Return a JSON with these exact keys:
+    {
+        "notary_seal_all_pages": true/false,
+        "on_stamp_paper": true/false,
+        "notary_seal_verified": true/false,
+        "stamp_paper_verified": true/false,
         "clarity_score": 0.95
     }
 
