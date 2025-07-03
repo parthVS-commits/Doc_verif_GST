@@ -560,7 +560,8 @@ def get_rental_agreement_extraction_prompt():
     """
     return """
     Extract the following information from the Rental Agreement:
-    - Is there a notary seal on every page (check all edges and corners of each page if notary seal is present) ? (yes/no)
+    - Landlord's full name
+    - Is there a notary seal on every page (check all edges and corners of each page if notary seal is present)? (yes/no)
     - Is the agreement executed on stamp paper? (yes/no)
     - Notary seal verification (yes/no)
     - Stamp paper verification (yes/no)
@@ -568,6 +569,7 @@ def get_rental_agreement_extraction_prompt():
 
     Return a JSON with these exact keys:
     {
+        "landlord_name": "Full Name of Landlord",
         "notary_seal_all_pages": true/false,
         "on_stamp_paper": true/false,
         "notary_seal_verified": true/false,

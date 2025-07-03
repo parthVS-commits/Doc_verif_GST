@@ -4816,7 +4816,8 @@ class DocumentValidationService:
             elif rule_id == "RENTAL_AGREEMENT_VALIDATION":
                 result = self._validate_rental_agreement_gst(
                     get_doc(gst_documents.get("rental_agreement")),
-                    conditions
+                    conditions,
+                    eb_data = self.extraction_service.extract_document_data(eb_doc, "electricity_bill") if eb_doc else {}
                 )
                 validation_rules[rule_id] = result
             else:
@@ -5361,7 +5362,7 @@ class DocumentValidationService:
             return {"status": "failed", "error_message": "; ".join(errors)}
         return {"status": "passed", "error_message": None}
     
-    def _validate_rental_agreement_gst(self, doc, conditions):
+    def _validate_rental_agreement_gst(self, doc, conditions,eb_data=None):
         """
         Validate Rental Agreement for GST Rental Property.
         Args:
@@ -5395,6 +5396,11 @@ class DocumentValidationService:
         # Stamp paper verification
         if conditions.get("stamp_paper_verification", True) and not data.get("stamp_paper_verified", False):
             errors.append("Stamp paper verification failed")
+            
+        landlord_name = (data.get("landlord_name") or "").strip().lower()
+        eb_name = (eb_data.get("consumer_name") or "").strip().lower() if eb_data else ""
+        if landlord_name and (landlord_name != eb_name):
+            errors.append("Landlord name does not match EB bill")
 
         # Clarity score
         if data.get("clarity_score", 0) < conditions.get("min_clarity_score", 0.7):
