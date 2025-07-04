@@ -309,16 +309,52 @@ class DocumentValidationService:
                     "rule_name": "Consent Letter Validation",
                     "description": "Consent letter must be notarized on all pages, include firm name, state rent-free provision, have landlord signature with date/place, and landlord details must match EB bill and property tax receipt",
                     "severity": "high",
-                    "is_active": true,
+                    "is_active": True,
                     "conditions": {
-                        "notary_seal_required_all_pages": true,
-                        "firm_name_required": true,
-                        "rent_free_statement_required": true,
-                        "landlord_signature_required": true,
-                        "stamp_required": true,
-                        "landlord_name_match_eb_property_tax": true,
-                        "landlord_address_match_eb_property_tax": true,
+                        "notary_seal_required_all_pages": True,
+                        "firm_name_required": True,
+                        "rent_free_statement_required": True,
+                        "landlord_signature_required": True,
+                        "stamp_required": True,
+                        "landlord_name_match_eb_property_tax": True,
+                        "landlord_address_match_eb_property_tax": True,
                         "min_clarity_score": 0.7
+                    }
+                },
+                {
+                    "rule_id": "BOARD_RESOLUTION_VALIDATION",
+                    "rule_name": "Board Resolution Validation",
+                    "description": "Board resolution must include company name and company address",
+                    "severity": "high",
+                    "is_active": True,
+                    "conditions": {
+                        "company_name_required": True,
+                        "company_address_required": True,
+                        "min_clarity_score": 0.7
+                    }
+                },
+                {
+                    "rule_id": "RENTAL_AGREEMENT_VALIDATION",
+                    "rule_name": "Rental Agreement Validation",
+                    "description": "Rental agreement must be notarized on every page and executed on stamp paper",
+                    "severity": "high",
+                    "is_active": True,
+                    "conditions": {
+                        "notary_seal_required_all_pages": True,
+                        "stamp_paper_required": True,
+                        "notary_seal_verification": True,
+                        "stamp_paper_verification": True,
+                        "min_clarity_score": 0.7
+                    }
+                },
+                {
+                    "rule_id": "NOC_OWNER_VALIDATION",
+                    "rule_name": "NOC Owner Name Validation",
+                    "description": "Verify NOC owner name matches API returned owner name",
+                    "severity": "high",
+                    "is_active": True,
+                    "conditions": {
+                        "api_check_required": True
                     }
                 }
             ]
@@ -500,7 +536,7 @@ class DocumentValidationService:
                 company_docs_validation = self._validate_company_documents(
                     input_data.get('companyDocuments', {}),
                     input_data.get('directors', {}),
-                    compliance_rules,
+                    compliance_rules, service_id,
                     preconditions
                 )
                 
@@ -1693,7 +1729,7 @@ class DocumentValidationService:
         self, 
         company_docs: Dict[str, Any],
         directors: Dict,
-        compliance_rules: Dict,
+        compliance_rules: Dict, service_id,
         preconditions: Dict = None
     ) -> Dict[str, Any]:
         """
@@ -1874,7 +1910,7 @@ class DocumentValidationService:
                             is_noc_valid = True
                             
                             # Validate NOC Owner Name if preconditions are provided
-                            if noc_data and preconditions and 'owner_name' in preconditions:
+                            if service_id in ("2", "3") and noc_data and preconditions and 'owner_name' in preconditions:
                                 noc_owner_rule = next(
                                     (rule for rule in rules if rule.get('rule_id') == 'NOC_OWNER_VALIDATION'), 
                                     None
@@ -3834,7 +3870,7 @@ class DocumentValidationService:
                 company_docs_validation = self._validate_company_documents(
                     input_data.get('companyDocuments', {}),
                     input_data.get('directors', {}),
-                    rules
+                    rules, service_id
                 )
                 validation_results["company_documents_validation"] = company_docs_validation
             
@@ -4758,6 +4794,12 @@ class DocumentValidationService:
                 else:
                     validation_rules[rule_id] = {"status": "skipped", "error_message": "Not required for foreign nationality"}
                 # validation_rules[rule_id] = {"status": "skipped", "error_message": "Validation not implemented yet"}
+            elif rule_id == "BOARD_RESOLUTION_VALIDATION":
+                result = self._validate_board_resolution_gst(
+                    get_doc(gst_documents.get("board_resolution")),
+                    conditions
+                )
+                validation_rules[rule_id] = result
             elif rule_id == "CONSENT_LETTER_VALIDATION":
                 # Extract EB/property tax data for landlord match if needed
                 eb_doc = get_doc(gst_documents.get("electricity_bill"))
@@ -4769,6 +4811,13 @@ class DocumentValidationService:
                     conditions,
                     eb_data=eb_data
                     # property_tax_data=None  # Add if you support property tax extraction
+                )
+                validation_rules[rule_id] = result
+            elif rule_id == "RENTAL_AGREEMENT_VALIDATION":
+                result = self._validate_rental_agreement_gst(
+                    get_doc(gst_documents.get("rental_agreement")),
+                    conditions,
+                    eb_data = self.extraction_service.extract_document_data(eb_doc, "electricity_bill") if eb_doc else {}
                 )
                 validation_rules[rule_id] = result
             else:
@@ -5273,6 +5322,89 @@ class DocumentValidationService:
             #     errors.append("Landlord address does not match EB bill or property tax receipt")
             if consent_addr and (consent_addr != eb_addr):
                 errors.append("Landlord address does not match EB bill")
+
+        if errors:
+            return {"status": "failed", "error_message": "; ".join(errors)}
+        return {"status": "passed", "error_message": None}
+
+    def _validate_board_resolution_gst(self, doc, conditions):
+        """
+        Validate Board Resolution for GST PVT/LLP Property.
+        Args:
+            doc (dict): Board Resolution document (base64/url or extracted_data)
+            conditions (dict): Rule conditions
+        Returns:
+            dict: Validation result
+        """
+        if not doc:
+            return {"status": "failed", "error_message": "Board Resolution missing"}
+
+        if "extracted_data" in doc:
+            data = doc["extracted_data"]
+        else:
+            data = self.extraction_service.extract_document_data(doc, "board_resolution")
+
+        errors = []
+
+        # Company name
+        if conditions.get("company_name_required", True) and not data.get("company_name"):
+            errors.append("Company name missing in Board Resolution")
+
+        # Company address
+        if conditions.get("company_address_required", True) and not data.get("company_address"):
+            errors.append("Company address missing in Board Resolution")
+
+        # Clarity score
+        if data.get("clarity_score", 0) < conditions.get("min_clarity_score", 0.7):
+            errors.append(f"Low document clarity: {data.get('clarity_score', 0)}")
+
+        if errors:
+            return {"status": "failed", "error_message": "; ".join(errors)}
+        return {"status": "passed", "error_message": None}
+    
+    def _validate_rental_agreement_gst(self, doc, conditions,eb_data=None):
+        """
+        Validate Rental Agreement for GST Rental Property.
+        Args:
+            doc (dict): Rental Agreement document (base64/url or extracted_data)
+            conditions (dict): Rule conditions
+        Returns:
+            dict: Validation result
+        """
+        if not doc:
+            return {"status": "failed", "error_message": "Rental Agreement missing"}
+
+        if "extracted_data" in doc:
+            data = doc["extracted_data"]
+        else:
+            data = self.extraction_service.extract_document_data(doc, "rental_agreement")
+
+        errors = []
+
+        # Notary seal on all pages
+        if conditions.get("notary_seal_required_all_pages", True) and not data.get("notary_seal_all_pages", False):
+            errors.append("Notary seal missing on all pages")
+
+        # Stamp paper required
+        if conditions.get("stamp_paper_required", True) and not data.get("on_stamp_paper", False):
+            errors.append("Agreement not executed on stamp paper")
+
+        # Notary seal verification
+        if conditions.get("notary_seal_verification", True) and not data.get("notary_seal_verified", False):
+            errors.append("Notary seal verification failed")
+
+        # Stamp paper verification
+        if conditions.get("stamp_paper_verification", True) and not data.get("stamp_paper_verified", False):
+            errors.append("Stamp paper verification failed")
+            
+        landlord_name = (data.get("landlord_name") or "").strip().lower()
+        eb_name = (eb_data.get("consumer_name") or "").strip().lower() if eb_data else ""
+        if landlord_name and (landlord_name != eb_name):
+            errors.append("Landlord name does not match EB bill")
+
+        # Clarity score
+        if data.get("clarity_score", 0) < conditions.get("min_clarity_score", 0.7):
+            errors.append(f"Low document clarity: {data.get('clarity_score', 0)}")
 
         if errors:
             return {"status": "failed", "error_message": "; ".join(errors)}

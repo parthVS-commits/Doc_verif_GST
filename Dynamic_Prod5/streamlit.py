@@ -3,7 +3,7 @@ import base64
 import json
 from services.validation_service import DocumentValidationService
 from api.document_validation_api import DocumentValidationAPI
-
+import time 
 import os
 
 # Load from secrets (Streamlit deployment)
@@ -187,13 +187,50 @@ if service_id == "4":
             "gst_documents": gst_docs
         }
         try:
+            start_time = time.time()
             api_response, _ = validation_api.validate_document(payload)
+            elapsed = time.time() - start_time
+            print(f"Validation completed in {elapsed:.2f} seconds")
             st.success("✅ GST Own Property Validation Completed Successfully!")
             display_results(api_response, _)
             with st.expander("Show Raw Validation Response"):
                 st.json(api_response)
         except Exception as e:
             st.error(f"🚨 Validation Error: {str(e)}")
+elif service_id == "5":
+    st.header("GST Rental Property Service Input")
+    nationality = st.selectbox("Nationality", options=["Indian", "Foreign"])
+    gst_docs = {}
+    st.subheader("GST Documents Upload")
+    if nationality == "Indian":
+        gst_docs["aadhar_front"] = encode_file(st.file_uploader("Aadhar Front"))
+        gst_docs["aadhar_back"] = encode_file(st.file_uploader("Aadhar Back"))
+        gst_docs["pan"] = encode_file(st.file_uploader("PAN Card"))
+    gst_docs["passport_photo"] = encode_file(st.file_uploader("Passport Photo"))
+    gst_docs["signature"] = encode_file(st.file_uploader("Signature"))
+    gst_docs["noc"] = encode_file(st.file_uploader("NOC Document"))
+    gst_docs["electricity_bill"] = encode_file(st.file_uploader("Electricity Bill / Property Tax"))
+    gst_docs["rental_agreement"] = encode_file(st.file_uploader("Rental Agreement"))  # NEW
+
+    if st.button("Validate GST Rental Property Documents"):
+        payload = {
+            "service_id": service_id,
+            "request_id": request_id,
+            "nationality": nationality,
+            "gst_documents": gst_docs
+        }
+        try:
+            start_time = time.time()
+            response, _ = validation_api.validate_document(payload)
+            elapsed = time.time() - start_time
+            print(f"Validation completed in {elapsed:.2f} seconds")
+            st.success("✅ GST Rental Property Validation Completed Successfully!")
+            # display_results(response, payload)
+            display_results(response, _ )
+            with st.expander("Show Raw Validation Response"):
+                st.json(response)
+        except Exception as e:
+            st.error(f"Validation failed: {e}")
 elif service_id == "6":
     st.header("GST Family Owned Property Service Input")
     nationality = st.selectbox("Nationality", options=["Indian", "Foreign"])
@@ -217,8 +254,49 @@ elif service_id == "6":
             "gst_documents": gst_docs
         }
         try:
+            start_time = time.time()
             response,_ = validation_api.validate_document(payload)
-            display_results(response, payload)
+            elapsed = time.time() - start_time
+            print(f"Validation completed in {elapsed:.2f} seconds")
+            st.success("✅ GST Family Owned Property Validation Completed Successfully!")
+            #display_results(response, payload)
+            display_results(response, _ )
+            with st.expander("Show Raw Validation Response"):
+                st.json(response)
+        except Exception as e:
+            st.error(f"Validation failed: {e}")
+elif service_id == "7":
+    st.header("GST PVT/LLP Property Service Input")
+    nationality = st.selectbox("Nationality", options=["Indian", "Foreign"])
+    gst_docs = {}
+    st.subheader("GST Documents Upload")
+    if nationality == "Indian":
+        gst_docs["aadhar_front"] = encode_file(st.file_uploader("Aadhar Front"))
+        gst_docs["aadhar_back"] = encode_file(st.file_uploader("Aadhar Back"))
+        gst_docs["pan"] = encode_file(st.file_uploader("PAN Card"))
+    gst_docs["passport_photo"] = encode_file(st.file_uploader("Passport Photo"))
+    gst_docs["signature"] = encode_file(st.file_uploader("Signature"))
+    gst_docs["noc"] = encode_file(st.file_uploader("NOC Document"))
+    gst_docs["electricity_bill"] = encode_file(st.file_uploader("Electricity Bill / Property Tax"))
+    gst_docs["board_resolution"] = encode_file(st.file_uploader("Board Resolution"))  # NEW
+
+    if st.button("Validate GST PVT/LLP Property Documents"):
+        payload = {
+            "service_id": service_id,
+            "request_id": request_id,
+            "nationality": nationality,
+            "gst_documents": gst_docs
+        }
+        try:
+            start_time = time.time()
+            response, _ = validation_api.validate_document(payload)
+            elapsed = time.time() - start_time
+            print(f"Validation completed in {elapsed:.2f} seconds")
+            st.success("✅ GST PVT/LLP Property Validation Completed Successfully!")
+            # display_results(response, payload)
+            display_results(response, _ )
+            with st.expander("Show Raw Validation Response"):
+                st.json(response)
         except Exception as e:
             st.error(f"Validation failed: {e}")
 # TM Service UI
@@ -285,7 +363,10 @@ elif service_id == "8":
 
     if st.button("Validate TM Documents"):
         try:
+            start_time = time.time()
             api_response, _ = validation_api.validate_document(payload)
+            elapsed = time.time() - start_time
+            print(f"Validation completed in {elapsed:.2f} seconds")
             st.success("✅ TM Validation Completed Successfully!")
             display_results(api_response, _)
             with st.expander("Show Raw Validation Response"):
@@ -293,7 +374,13 @@ elif service_id == "8":
         except Exception as e:
             st.error(f"🚨 Validation Error: {str(e)}")
 
-else:
+elif service_id == "1" or service_id == "2" or service_id == "3":
+    if service_id == "1":
+        st.header("PVT Ownership Own Property")
+    elif service_id == "2":
+        st.header("PVT Ownership Family Property")
+    elif service_id == "3":
+        st.header("PVT Ownership Rental Property")
     num_directors = st.slider("Number of Directors", min_value=2, max_value=5, value=2)
     directors = {}
     for i in range(num_directors):
@@ -325,7 +412,9 @@ else:
     address_proof_type = st.selectbox("Select Address Proof Type", options=["Electricity Bill", "NOC", "Gas Bill"])
     addressProof = encode_file(st.file_uploader("Company Address Proof"))
     noc = encode_file(st.file_uploader("NOC Document"))
-
+    owner_name = None
+    if service_id=="2" or service_id == "3":
+        owner_name = st.text_input("NOC Owner Name (for validation)", key="noc_owner")
     if st.button("Validate Documents"):
         payload = {
             "service_id": service_id,
@@ -335,10 +424,16 @@ else:
                 "address_proof_type": address_proof_type,
                 "addressProof": addressProof,
                 "noc": noc
+            },
+            "preconditions": {
+                "owner_name": owner_name
             }
         }
         try:
+            start_time = time.time()
             api_response, _ = validation_api.validate_document(payload)
+            elapsed = time.time() - start_time
+            print(f"Validation completed in {elapsed:.2f} seconds")
             st.success("✅ Validation Completed Successfully!")
             display_results(api_response, _)
             with st.expander("Show Raw Validation Response"):

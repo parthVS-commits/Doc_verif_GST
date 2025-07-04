@@ -57,7 +57,7 @@ class DocumentValidationAPI:
             # Extract parameters
             service_id = input_data.get('service_id', '1')
             request_id = input_data.get('request_id', '')
-            if service_id == "4" or service_id == "6":  # GST service
+            if service_id == "4" or service_id == "5" or service_id == "6" or service_id == "7":  # GST service
                 #self._validate_gst_input_structure(input_data)
                 nationality = input_data.get('nationality', 'indian')
                 gst_documents = input_data.get('gst_documents', {})
