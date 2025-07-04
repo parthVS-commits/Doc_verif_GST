@@ -4440,19 +4440,19 @@ class DocumentValidationService:
             brand_in_logo = extracted_data.get('brand_name_in_logo', False)
             brand_names_found = extracted_data.get('brand_names_found') or []
             # Require exact (normalized) match with any extracted brand name
-            def normalize(name):
+            def normalize(text):
+                if not text:
+                    return ''
                 import re
-                return re.sub(r'[^\w\s]', '', name.lower()).strip()
+                return re.sub(r'[^\\w\\s]', '', str(text).lower()).strip()
 
             normalized_input = normalize(brand_name)
             matches = [normalize(b) for b in brand_names_found if b]
-            if not (logo_visible and normalized_input in matches):
-                validation_result["status"] = "failed"
-                validation_result["error_message"] = f"Brand name '{brand_name}' not found as exact match in logo file"
-        except Exception as e:
-            self.logger.error(f"Error checking brand name in logo file: {str(e)}", exc_info=True)
-            validation_result["status"] = "failed"
-            validation_result["error_message"] = f"Error validating logo file: {str(e)}"
+            # If text_matches_company_name is True, we trust the AI's judgment
++            if not (logo_visible and (normalized_input in normalized_text or text_matches_company_name)):
+                 validation_result["status"] = "failed"
+                 validation_result["error_message"] = f"Brand name '{brand_name}' not found as exact match in logo file"
+         except Exception as e:
 
         return validation_result
         #     brand_name_match = any(
