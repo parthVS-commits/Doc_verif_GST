@@ -463,7 +463,7 @@ def get_trademark_verification_document_prompt():
     Analyze this trademark verification document and extract the following:
     
     - Company name (if visible)
-    - Any brand names visible in the document (even if brand name is in logo)
+    - Extract all visible text from the document
     - Any logos or visual trademarks present
     - Document date (if visible)
     - Document type
@@ -472,12 +472,13 @@ def get_trademark_verification_document_prompt():
     - Is the company name clearly visible? (yes/no)
     - Are there any logos or visual trademarks present? (yes/no)
     - Is the document clear and legible? (Rate clarity on a scale of 0 to 1)
-    - If logos are present, is the brand name visible within the logo itself? (yes/no)
+    - Is the text extracted from the document?
+    - Does the extracted text match the company name?
     
     Return a JSON with these exact keys:
     {
         "company_name": "Company name if visible",
-        "brand_names_found": ["List", "of", "brand", "names"],
+        "extracted_text": "All visible text extracted from the document",
         "has_logo": true/false,
         "logo_description": "Description of logo if present",
         "document_date": "DD/MM/YYYY",
