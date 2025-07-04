@@ -4438,7 +4438,6 @@ class DocumentValidationService:
             # print("-----------------------Extracted Data:")
             logo_visible = extracted_data.get('logo_visible', False)
             extracted_text = extracted_data.get('extracted_text', '')
-            text_matches_company_name = extracted_data.get('text_matches_company_name', False)
             
             # Normalize both the extracted text and company name
             def normalize(text):
@@ -4451,10 +4450,10 @@ class DocumentValidationService:
             normalized_text = normalize(extracted_text)
             
             # Check if the normalized company name is present in the normalized extracted text
-            # If text_matches_company_name is True, we trust the AI's judgment
-            if not (logo_visible and (normalized_input in normalized_text or text_matches_company_name)):
+            # We don't need to check text_matches_company_name since we're already getting the text
+            if not (logo_visible and normalized_input in normalized_text):
                 validation_result["status"] = "failed"
-                validation_result["error_message"] = f"Brand name '{brand_name}' not found as exact match in logo file"
+                validation_result["error_message"] = f"Brand name '{brand_name}' not found in extracted text"
         except Exception as e:
             self.logger.error(f"Error checking brand name in logo file: {str(e)}", exc_info=True)
             validation_result["status"] = "failed"
