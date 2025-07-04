@@ -485,11 +485,11 @@ def get_trademark_verification_document_prompt():
         "company_name_visible": true/false,
         "logo_visible": true/false,
         "clarity_score": 0.95,
-        "brand_name_visible": true/false,
-        "brand_name_in_logo": true/false
+        "text_matches_company_name": true/false
+
     }
     
-    If a field is not found, use null.
+    If a field is not found, use empty string ('') for text fields and false for boolean fields.
     """
 
 def get_elec_bill_extraction_prompt():
