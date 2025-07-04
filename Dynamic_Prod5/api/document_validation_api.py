@@ -64,6 +64,17 @@ class DocumentValidationAPI:
                 result, detailed_result = self.validation_service.validate_gst_own_documents(
                     service_id, request_id, nationality, gst_documents
                 )
+                # Update trademark validation format if present
+                if 'trademark' in detailed_result:
+                    trademark_data = detailed_result['trademark']
+                    if trademark_data:
+                        # Update old fields to new format
+                        trademark_data['extracted_text'] = trademark_data.get('logo_description', '')
+                        trademark_data['text_matches_company_name'] = trademark_data.get('brand_name_in_logo', False)
+                        # Remove old fields
+                        trademark_data.pop('brand_names_found', None)
+                        trademark_data.pop('brand_name_visible', None)
+                        trademark_data.pop('brand_name_in_logo', None)
                 formatted_result = self._format_gst_api_response(result, detailed_result)
                 return formatted_result, detailed_result
             # Perform validation
@@ -73,6 +84,17 @@ class DocumentValidationAPI:
                 request_id, 
                 input_data
             )
+            # Update trademark validation format if present
+            if 'trademark' in detailed_result:
+                trademark_data = detailed_result['trademark']
+                if trademark_data:
+                    # Update old fields to new format
+                    trademark_data['extracted_text'] = trademark_data.get('logo_description', '')
+                    trademark_data['text_matches_company_name'] = trademark_data.get('brand_name_in_logo', False)
+                    # Remove old fields
+                    trademark_data.pop('brand_names_found', None)
+                    trademark_data.pop('brand_name_visible', None)
+                    trademark_data.pop('brand_name_in_logo', None)
             
             # Format the result for API response
             formatted_result = self._format_api_response(result, detailed_result)
@@ -127,7 +149,28 @@ class DocumentValidationAPI:
             raise DocumentValidationError("gstDocuments must be a dictionary")
     # Optionally, check for required document keys inside gstDocuments
 
-    def _format_gst_api_response(self, result: Dict[str, Any], detailed_result: Dict[str, Any]) -> Dict[str, Any]:
+    def _format_gst_api_response(self, result: ValidationResult, detailed_result: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Format GST service API response
+        
+        Args:
+            result (ValidationResult): Validation result
+            detailed_result (dict): Detailed validation result
+            
+        Returns:
+            dict: Formatted API response
+        """
+        # Update trademark validation format if present
+        if 'trademark' in detailed_result:
+            trademark_data = detailed_result['trademark']
+            if trademark_data:
+                # Update old fields to new format
+                trademark_data['extracted_text'] = trademark_data.get('logo_description', '')
+                trademark_data['text_matches_company_name'] = trademark_data.get('brand_name_in_logo', False)
+                # Remove old fields
+                trademark_data.pop('brand_names_found', None)
+                trademark_data.pop('brand_name_visible', None)
+                trademark_data.pop('brand_name_in_logo', None)
         api_response = {
             "validation_rules": result.get('validation_rules', {}),
             "document_validation": result.get('document_validation', {})
@@ -404,7 +447,28 @@ class DocumentValidationAPI:
                         )
         
     
-    def _format_api_response(self, result: Dict[str, Any], detailed_result: Dict[str, Any]) -> Dict[str, Any]:
+    def _format_api_response(self, result: ValidationResult, detailed_result: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Format standard API response
+        
+        Args:
+            result (ValidationResult): Validation result
+            detailed_result (dict): Detailed validation result
+            
+        Returns:
+            dict: Formatted API response
+        """
+        # Update trademark validation format if present
+        if 'trademark' in detailed_result:
+            trademark_data = detailed_result['trademark']
+            if trademark_data:
+                # Update old fields to new format
+                trademark_data['extracted_text'] = trademark_data.get('logo_description', '')
+                trademark_data['text_matches_company_name'] = trademark_data.get('brand_name_in_logo', False)
+                # Remove old fields
+                trademark_data.pop('brand_names_found', None)
+                trademark_data.pop('brand_name_visible', None)
+                trademark_data.pop('brand_name_in_logo', None)
         """
         Format the validation results into the required API response schema
         
